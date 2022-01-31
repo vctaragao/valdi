@@ -28,7 +28,7 @@ defmodule Valdi do
   {:error, "does not match format"}
   ```
   """
-
+  import Valdi.Gettext
   @type error :: {:error, String.t()}
 
   @doc """
@@ -157,7 +157,9 @@ defmodule Valdi do
   defp get_validator(:length), do: &validate_length/2
   defp get_validator(:in), do: &validate_inclusion/2
   defp get_validator(:not_in), do: &validate_exclusion/2
-  defp get_validator(name), do: {:error, "validate_#{name} is not support"}
+
+  defp get_validator(name),
+    do: {:error, dgettext("valdi_erros", "validate_%{name} is not support", name: name)}
 
   @doc """
   Validate embed types
@@ -173,7 +175,7 @@ defmodule Valdi do
   end
 
   def validate_embed(_, _) do
-    {:error, "is invalid"}
+    {:error, dgettext("valdi_erros", "is invalid")}
   end
 
   @doc """
@@ -226,8 +228,12 @@ defmodule Valdi do
   def validate_type([{atom, _} | _] = _check_item, :keyword) when is_atom(atom), do: :ok
   # def validate_type(value, struct_name) when is_struct(value, struct_name), do: :ok
   def validate_type(%{__struct__: struct}, struct_name) when struct == struct_name, do: :ok
-  def validate_type(_, type) when is_tuple(type), do: {:error, "is not an array"}
-  def validate_type(_, type), do: {:error, "is not a #{type}"}
+
+  def validate_type(_, type) when is_tuple(type),
+    do: {:error, dgettext("valdi_erros", "is not an array")}
+
+  def validate_type(_, type),
+    do: {:error, dgettext("valdi_erros", "is not a %{type}", type: type)}
 
   # loop and validate element in array using `validate_func`
   defp array(data, validate_func, return_data \\ false, acc \\ [])
@@ -271,7 +277,7 @@ defmodule Valdi do
   def validate_required(value, func) when is_function(func, 0),
     do: validate_required(value, func.())
 
-  def validate_required(nil, true), do: {:error, "is required"}
+  def validate_required(nil, true), do: {:error, dgettext("valdi_erros", "is required")}
   def validate_required(_, _), do: :ok
 
   @doc """
@@ -305,7 +311,7 @@ defmodule Valdi do
           error
       end)
     else
-      {:error, "must be a number"}
+      {:error, dgettext("valdi_erros", "must be a number")}
     end
   end
 
@@ -313,7 +319,8 @@ defmodule Valdi do
     if number == check_value do
       :ok
     else
-      {:error, "must be equal to #{check_value}"}
+      {:error,
+       dgettext("valdi_erros", "must be equal to %{check_value}", check_value: check_value)}
     end
   end
 
@@ -321,7 +328,8 @@ defmodule Valdi do
     if number > check_value do
       :ok
     else
-      {:error, "must be greater than #{check_value}"}
+      {:error,
+       dgettext("valdi_erros", "must be greater than %{check_value}", check_value: check_value)}
     end
   end
 
@@ -329,7 +337,10 @@ defmodule Valdi do
     if number >= check_value do
       :ok
     else
-      {:error, "must be greater than or equal to #{check_value}"}
+      {:error,
+       dgettext("valdi_erros", "must be greater than or equal to %{check_value}",
+         check_value: check_value
+       )}
     end
   end
 
@@ -341,7 +352,8 @@ defmodule Valdi do
     if number < check_value do
       :ok
     else
-      {:error, "must be less than #{check_value}"}
+      {:error,
+       dgettext("valdi_erros", "must be less than %{check_value}", check_value: check_value)}
     end
   end
 
@@ -349,7 +361,12 @@ defmodule Valdi do
     if number <= check_value do
       :ok
     else
-      {:error, "must be less than or equal to #{check_value}"}
+      {:error,
+       dgettext(
+         "valdi_erros",
+         "must be less than or equal to %{check_value}",
+         check_value: check_value
+       )}
     end
   end
 
@@ -358,7 +375,7 @@ defmodule Valdi do
   end
 
   def validate_number(_number, {check, _check_value}) do
-    {:error, "unknown check '#{check}'"}
+    {:error, dgettext("valdi_erros", "unknown check %{check}", check: check)}
   end
 
   @doc """
@@ -386,10 +403,11 @@ defmodule Valdi do
       :ok
     else
       {:error, :wrong_type} ->
-        {:error, "length check supports only lists, binaries, maps and tuples"}
+        {:error,
+         dgettext("valdi_erros", "length check supports only lists, binaries, maps and tuples")}
 
       {:error, msg} ->
-        {:error, "length #{msg}"}
+        {:error, dgettext("valdi_erros", "length %{msg}", msg: msg)}
     end
   end
 
@@ -413,11 +431,13 @@ defmodule Valdi do
   @spec validate_format(String.t(), Regex.t()) ::
           :ok | error
   def validate_format(value, check) when is_binary(value) do
-    if Regex.match?(check, value), do: :ok, else: {:error, "does not match format"}
+    if Regex.match?(check, value),
+      do: :ok,
+      else: {:error, dgettext("valdi_erros", "does not match format")}
   end
 
   def validate_format(_value, _check) do
-    {:error, "format check only support string"}
+    {:error, dgettext("valdi_erros", "format check only support string")}
   end
 
   @doc """
@@ -439,10 +459,10 @@ defmodule Valdi do
       if Enum.member?(enum, value) do
         :ok
       else
-        {:error, "not be in the inclusion list"}
+        {:error, dgettext("valdi_erros", "not be in the inclusion list")}
       end
     else
-      {:error, "given condition does not implement protocol Enumerable"}
+      {:error, dgettext("valdi_erros", "given condition does not implement protocol Enumerable")}
     end
   end
 
@@ -452,12 +472,12 @@ defmodule Valdi do
   def validate_exclusion(value, enum) do
     if Enumerable.impl_for(enum) do
       if Enum.member?(enum, value) do
-        {:error, "must not be in the exclusion list"}
+        {:error, dgettext("valdi_erros", "must not be in the exclusion list")}
       else
         :ok
       end
     else
-      {:error, "given condition does not implement protocol Enumerable"}
+      {:error, dgettext("valdi_erros", "given condition does not implement protocol Enumerable")}
     end
   end
 end
